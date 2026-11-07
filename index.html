@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Shareable Calculator</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-3 sm:p-5 flex justify-center items-center min-h-[460px]">
+  <div class="w-full max-w-md bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl p-5 shadow-lg flex flex-col gap-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
+      <div>
+        <h2 class="text-base font-bold text-[var(--foreground)] flex items-center gap-2">
+          <span>🧮</span> Калькулятор
+        </h2>
+        <p class="text-xs text-[var(--muted-foreground)]">С функцией сохранения и шаринга</p>
+      </div>
+      <div class="flex gap-1.5">
+        <button id="shareBtn" class="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition font-medium cursor-pointer shadow-sm" title="Скопировать ссылку с состоянием">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+          <span>Поделиться</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Display -->
+    <div class="bg-[var(--background)] rounded-xl p-3.5 border border-[var(--border)] text-right flex flex-col justify-end min-h-[76px] relative overflow-hidden">
+      <div id="historyExpr" class="text-xs text-[var(--muted-foreground)] font-mono h-4 truncate"></div>
+      <div id="mainDisplay" class="text-2xl sm:text-3xl font-mono font-semibold tracking-tight text-[var(--foreground)] truncate select-all">0</div>
+      <div id="toast" class="absolute inset-0 bg-[var(--card)] flex items-center justify-center text-xs font-medium text-[var(--foreground)] opacity-0 pointer-events-none transition-opacity duration-200">
+        Ссылка скопирована в буфер! 🚀
+      </div>
+    </div>
+
+    <!-- Mode Selector / Memory Bar -->
+    <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)] px-0.5">
+      <span id="stateBadge" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[var(--content)] border border-[var(--border)] text-[11px]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Готов
+      </span>
+      <div class="flex gap-2">
+        <button id="copyValBtn" class="hover:text-[var(--foreground)] transition cursor-pointer text-xs underline decoration-dotted">Копировать рез.</button>
+        <button id="clearHistBtn" class="hover:text-red-400 transition cursor-pointer text-xs">Очистить</button>
+      </div>
+    </div>
+
+    <!-- Keypad -->
+    <div class="grid grid-cols-4 gap-2 text-sm font-medium">
+      <!-- Row 1 -->
+      <button data-action="clear" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-red-500 transition">AC</button>
+      <button data-action="backspace" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">⌫</button>
+      <button data-action="pct" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">%</button>
+      <button data-op="/" class="btn p-2.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition font-bold">÷</button>
+
+      <!-- Row 2 -->
+      <button data-num="7" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">7</button>
+      <button data-num="8" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">8</button>
+      <button data-num="9" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">9</button>
+      <button data-op="*" class="btn p-2.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition font-bold">×</button>
+
+      <!-- Row 3 -->
+      <button data-num="4" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">4</button>
+      <button data-num="5" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">5</button>
+      <button data-num="6" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">6</button>
+      <button data-op="-" class="btn p-2.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition font-bold">−</button>
+
+      <!-- Row 4 -->
+      <button data-num="1" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">1</button>
+      <button data-num="2" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">2</button>
+      <button data-num="3" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">3</button>
+      <button data-op="+" class="btn p-2.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition font-bold">+</button>
+
+      <!-- Row 5 -->
+      <button data-action="neg" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">±</button>
+      <button data-num="0" class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">0</button>
+      <button data-num="." class="btn p-2.5 rounded-xl bg-[var(--content)] hover:bg-[var(--border)] text-[var(--foreground)] transition">.</button>
+      <button data-action="calc" class="btn p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition font-bold">=</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const display = document.getElementById('mainDisplay');
+      const hist = document.getElementById('historyExpr');
+      const toast = document.getElementById('toast');
+      const shareBtn = document.getElementById('shareBtn');
+      const copyValBtn = document.getElementById('copyValBtn');
+      const clearHistBtn = document.getElementById('clearHistBtn');
+      const stateBadge = document.getElementById('stateBadge');
+
+      let currentInput = '0';
+      let prevValue = null;
+      let activeOp = null;
+      let shouldResetDisplay = false;
+
+      function updateDisplay() {
+        display.textContent = currentInput;
+        if (activeOp && prevValue !== null) {
+          const sym = { '/': '÷', '*': '×', '-': '−', '+': '+' }[activeOp] || activeOp;
+          hist.textContent = `${prevValue} ${sym}`;
+        } else {
+          hist.textContent = '';
+        }
+        updateUrlHash();
+      }
+
+      function showToast(text) {
+        toast.textContent = text;
+        toast.classList.remove('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'pointer-events-none');
+        }, 1500);
+      }
+
+      function calculate() {
+        if (!activeOp || prevValue === null) return;
+        const prev = parseFloat(prevValue);
+        const curr = parseFloat(currentInput);
+        if (isNaN(prev) || isNaN(curr)) return;
+
+        let res = 0;
+        switch (activeOp) {
+          case '+': res = prev + curr; break;
+          case '-': res = prev - curr; break;
+          case '*': res = prev * curr; break;
+          case '/':
+            if (curr === 0) {
+              currentInput = 'Ошибка';
+              prevValue = null;
+              activeOp = null;
+              updateDisplay();
+              return;
+            }
+            res = prev / curr;
+            break;
+        }
+
+        // Clean floating point errors
+        res = Math.round(res * 1e10) / 1e10;
+        hist.textContent = `${prevValue} ${activeOp} ${currentInput} =`;
+        currentInput = String(res);
+        prevValue = null;
+        activeOp = null;
+        shouldResetDisplay = true;
+        display.textContent = currentInput;
+        updateUrlHash();
+      }
+
+      function inputDigit(digit) {
+        if (shouldResetDisplay) {
+          currentInput = digit === '.' ? '0.' : digit;
+          shouldResetDisplay = false;
+        } else {
+          if (digit === '.') {
+            if (!currentInput.includes('.')) currentInput += '.';
+          } else {
+            currentInput = currentInput === '0' ? digit : currentInput + digit;
+          }
+        }
+        updateDisplay();
+      }
+
+      function handleOp(op) {
+        if (activeOp && !shouldResetDisplay) {
+          calculate();
+        }
+        prevValue = currentInput;
+        activeOp = op;
+        shouldResetDisplay = true;
+        updateDisplay();
+      }
+
+      // URL Hash State Management (Shareable feature)
+      function updateUrlHash() {
+        try {
+          const payload = {
+            c: currentInput,
+            p: prevValue,
+            o: activeOp
+          };
+          const hash = '#calc=' + encodeURIComponent(btoa(JSON.stringify(payload)));
+          window.history.replaceState(null, '', hash);
+        } catch (e) {}
+      }
+
+      function restoreFromHash() {
+        try {
+          if (window.location.hash.startsWith('#calc=')) {
+            const raw = decodeURIComponent(window.location.hash.replace('#calc=', ''));
+            const data = JSON.parse(atob(raw));
+            if (data && typeof data.c === 'string') {
+              currentInput = data.c;
+              prevValue = data.p;
+              activeOp = data.o;
+              stateBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Загружено по ссылке';
+              updateDisplay();
+            }
+          }
+        } catch (e) {
+          console.warn('Не удалось распарсить сохраненное состояние:', e);
+        }
+      }
+
+      // Event listeners
+      document.querySelectorAll('[data-num]').forEach(b => {
+        b.addEventListener('click', () => inputDigit(b.getAttribute('data-num')));
+      });
+
+      document.querySelectorAll('[data-op]').forEach(b => {
+        b.addEventListener('click', () => handleOp(b.getAttribute('data-op')));
+      });
+
+      document.querySelector('[data-action="calc"]').addEventListener('click', calculate);
+
+      document.querySelector('[data-action="clear"]').addEventListener('click', () => {
+        currentInput = '0';
+        prevValue = null;
+        activeOp = null;
+        shouldResetDisplay = false;
+        updateDisplay();
+      });
+
+      document.querySelector('[data-action="backspace"]').addEventListener('click', () => {
+        if (shouldResetDisplay) return;
+        currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';
+        updateDisplay();
+      });
+
+      document.querySelector('[data-action="neg"]').addEventListener('click', () => {
+        if (currentInput === '0' || currentInput === 'Ошибка') return;
+        currentInput = currentInput.startsWith('-') ? currentInput.slice(1) : '-' + currentInput;
+        updateDisplay();
+      });
+
+      document.querySelector('[data-action="pct"]').addEventListener('click', () => {
+        const val = parseFloat(currentInput);
+        if (!isNaN(val)) {
+          currentInput = String(val / 100);
+          updateDisplay();
+        }
+      });
+
+      shareBtn.addEventListener('click', () => {
+        updateUrlHash();
+        const shareUrl = window.location.href;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          showToast('Ссылка на расчет скопирована! 🔗');
+        }).catch(() => {
+          prompt('Скопируйте ссылку вручную:', shareUrl);
+        });
+      });
+
+      copyValBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(currentInput).then(() => {
+          showToast('Значение скопировано! 📋');
+        });
+      });
+
+      clearHistBtn.addEventListener('click', () => {
+        currentInput = '0';
+        prevValue = null;
+        activeOp = null;
+        window.history.replaceState(null, '', window.location.pathname);
+        stateBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Сброшено';
+        updateDisplay();
+      });
+
+      // Restore on load
+      restoreFromHash();
+      updateDisplay();
+    })();
+  </script>
+</body>
+</html>
